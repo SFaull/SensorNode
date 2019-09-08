@@ -36,6 +36,7 @@ PubSubClient client(espClient);
 CRGB leds[WS2812_NUM_LEDS];
 LEDController ledController(leds);
 unsigned long publishTimer = 0;
+bool initialWifiConfig = false;
 
 
 // Module specific variable declarations
@@ -145,34 +146,6 @@ void callback(char* topic, byte* payload, unsigned int length)
   }  
 }
 
-void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected())
-  {
-    Serial.print("Attempting MQTT connection... ");
-    // Attempt to connect
-    if (client.connect(DEVICE_NAME, MQTT_USERNAME, MQTT_PASSWORD))
-    {
-      Serial.println("Connected");
-      // Once connected, publish an announcement...
-      client.publish(MQTT_ROOM, "Connected");  // potentially not necessary
-      // ... and resubscribe
-      client.subscribe(MQTT_COMMS);
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.print(" try again in 5 seconds");
-      ledController.setColour(WS2812_BRIGHTNESS,0,0);
-      // Wait 5 seconds before retrying and flash LED red
-      delay(3000);
-      ledController.setColour(0,0,0);
-      delay(2000);
-    }
-  }
-}
-
 void readSensors(void)
 {
 #ifdef SENSOR_SCT_013_000
@@ -205,6 +178,77 @@ void initSensors(void)
 #endif
 }
 
+void wifiProcess(void)
+{  
+  // try connecting to the last access point
+  if(WiFi.status() != WL_CONNECTED)
+    WiFi.mode(WIFI_STA);
+
+  int seconds = 0;
+  // dont give up unless no connection for 60 seconds.
+  while(WiFi.status() != WL_CONNECTED)
+  {
+    seconds++;
+    delay(1000);
+
+    // its been 1 minute, probably not gonna reconnect, lets reset.
+    if(seconds > 60)
+    {
+        ESP.reset(); // This is a bit crude. For some unknown reason webserver can only be started once per boot up 
+        // so resetting the device allows to go back into config mode again when it reboots.
+        delay(5000);
+    }
+  }
+
+  // check mqtt connection (TODO should have some timout on this.)
+  if (!client.connected())
+  {
+    // Loop until we're reconnected
+    while (!client.connected())
+    {
+      Serial.print("Attempting MQTT connection... ");
+      // Attempt to connect
+      if (client.connect(DEVICE_NAME, MQTT_USERNAME, MQTT_PASSWORD))
+      {
+        Serial.println("Connected");
+        client.publish(MQTT_ROOM, "Connected");
+        client.subscribe(MQTT_COMMS);
+      }
+      else
+      {
+        Serial.print("failed, rc=");
+        Serial.print(client.state());
+        Serial.print(" try again in 5 seconds");
+        ledController.setColour(WS2812_BRIGHTNESS,0,0);
+        // Wait 5 seconds before retrying and flash LED red
+        delay(3000);
+        ledController.setColour(0,0,0);
+        delay(2000);
+      }
+    }
+  }
+
+  client.loop();
+
+  ArduinoOTA.handle();
+}
+
+
+void initWifi(void)
+{
+  WiFi.mode(WIFI_STA); // Force to station mode because if device was switched off while in access point mode it will start up next time
+  WiFiManager wifiManager;
+  wifiManager.setTimeout(WIFI_TIMEOUT);
+  bool connectionSuccess = wifiManager.autoConnect(DEVICE_NAME);  
+  if (!connectionSuccess) 
+  {
+    Serial.println("Connection failed... restarting");
+    ESP.reset(); // This is a bit crude. For some unknown reason webserver can only be started once per boot up 
+    // so resetting the device allows to go back into config mode again when it reboots.
+    delay(5000);
+  } 
+}
+
 void setup()
 {
   Serial.begin(SERIAL_BAUD_RATE);
@@ -214,16 +258,12 @@ void setup()
   FastLED.addLeds<NEOPIXEL, WS2812_DATA_PIN>(leds, WS2812_NUM_LEDS);
   ledController.setColour(0,0,0);
 
-  /* Setup WiFi and MQTT */
-  //Local intialization. Once its business is done, there is no need to keep it around
-  WiFiManager wifiManager;
-  wifiManager.autoConnect(DEVICE_NAME);
-
   client.setServer(MQTT_SERVER, MQTT_PORT);
   client.setCallback(callback);
 
   initOTA();
   initSensors();
+  initWifi();
   
   setTimer(&publishTimer);
   ledController.setColourTarget(0,0,0);
@@ -231,13 +271,13 @@ void setup()
 
 void loop()
 {
-  /* Check WiFi Connection */
-  if (!client.connected())
-    reconnect();
-  client.loop();
-  ArduinoOTA.handle();
+  // keep wireless comms alive
+  wifiProcess();
+  
+  // update the LEDs 
   ledController.run();
-
+  
+  // if timer has expired, take some readings and publish
   if (timerExpired(publishTimer, MQTT_PUBLISH_INTERVAL))  // get the time every 5 seconds
   {
     setTimer(&publishTimer);  // reset timer

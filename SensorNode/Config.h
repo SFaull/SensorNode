@@ -1,6 +1,7 @@
 // General
 #define DEVICE_NAME             "PowerMonitor"
 #define SERIAL_BAUD_RATE        115200
+#define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
 // MQTT
 #define MQTT_PUBLISH_INTERVAL   5000 // 5 seconds
@@ -14,7 +15,7 @@
 
 // Sensors
 #define SENSOR_SCT_013_000              // Power & Current sensor
-#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
 
 // Current sensor options
 #ifdef SENSOR_SCT_013_000
