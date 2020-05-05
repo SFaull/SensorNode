@@ -1,21 +1,30 @@
 // General
-#define DEVICE_NAME             "PowerMonitor"
+#define DEVICE_NAME             "IOT_TEST"
+#define HOSTNAME                "TESTSENSOR"
+#define DEVICE_DESCRIPTION      "IOT Test Sensor (development)"
 #define SERIAL_BAUD_RATE        115200
 #define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
 // MQTT
 #define MQTT_PUBLISH_INTERVAL   5000 // 5 seconds
-#define MQTT_ROOM               "Shed"
-#define MQTT_COMMS              MQTT_ROOM "/" DEVICE_NAME
+#define MQTT_ROOM               "SamBedroom"
+#define MQTT_DATA               MQTT_ROOM "/" HOSTNAME "/data"
+#define MQTT_CMD                MQTT_ROOM "/" HOSTNAME "/cmd"
+#define MQTT_METADATA           MQTT_ROOM "/" HOSTNAME "/metadata"     
+
+// Hardware Options (uncomment all of the sensors that are connected)
+//#define WS2812_LED                      // Neopixel LED
+//#define SENSOR_SCT_013_000              // Power & Current sensor
+//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+#define DS18B20                           // Dalas onewire temperature sensor
+
 
 // LED
-#define WS2812_DATA_PIN         4 
-#define WS2812_NUM_LEDS         1
-#define WS2812_BRIGHTNESS       255
-
-// Sensors
-#define SENSOR_SCT_013_000              // Power & Current sensor
-//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+#ifdef WS2812_LED
+  #define WS2812_DATA_PIN         4 
+  #define WS2812_NUM_LEDS         1
+  #define WS2812_BRIGHTNESS       255
+#endif
 
 // Current sensor options
 #ifdef SENSOR_SCT_013_000
@@ -24,21 +33,18 @@
   #define SCT_013_000_VOLTAGE     230.0
   #define SCT_013_000_CAL_FACTOR  20.40816
   #define emonTxV3                                // uncomment if ADC is 3V3 
-  #define MQTT_TOPIC_POWER        MQTT_ROOM "/Power"
-  #define MQTT_TOPIC_CURRENT      MQTT_ROOM "/Current"
 #endif
 
 // RHT options
 #ifdef SENSOR_BME280
   #define BME280_I2C_ADDRESS      0x76
   #define SEALEVELPRESSURE_HPA    (1013.25)
-  #define MQTT_TOPIC_TEMPERATURE  MQTT_ROOM "/Temperature"
-  #define MQTT_TOPIC_HUMIDITY     MQTT_ROOM "/Humidity"
-  #define MQTT_TOPIC_PRESSURE     MQTT_ROOM "/Pressure"
-  #define MQTT_TOPIC_ALTITUDE     MQTT_ROOM "/Altitude"
 #endif
 
-
+// Dallas temperature probe options (only 1 sensor supported)
+#ifdef DS18B20
+  #define ONE_WIRE_BUS 2 // D4
+#endif
 
 
    /*

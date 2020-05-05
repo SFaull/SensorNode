@@ -4,7 +4,6 @@
 
 #include "Config.h"
 #include "CredentialsConfig.h"
-#include "ledcontroller.h"
 #include "version.h"
 
 #include <WiFiManager.h>
@@ -12,10 +11,15 @@
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
 #include <WifiUDP.h>
+#include <ArduinoJson.h>
 #include <String.h>
 #include <stdio.h>
 #include <string.h>
-#include "FastLED.h"
+
+#ifdef WS2812_LED
+  #include "FastLED.h"
+  #include "ledcontroller.h"
+#endif
 
 #ifdef SENSOR_SCT_013_000
   #include "EmonLib.h"
@@ -27,19 +31,25 @@
   #include <Adafruit_BME280.h>
 #endif
 
-
+#ifdef DS18B20
+  #include <OneWire.h>
+  #include <DallasTemperature.h>
+#endif
 
 
 // General variable declarations
 WiFiClient espClient;
 PubSubClient client(espClient);
-CRGB leds[WS2812_NUM_LEDS];
-LEDController ledController(leds);
 unsigned long publishTimer = 0;
 bool initialWifiConfig = false;
 
 
 // Module specific variable declarations
+#ifdef WS2812_LED
+  CRGB leds[WS2812_NUM_LEDS];
+  LEDController ledController(leds);
+#endif
+
 #ifdef SENSOR_SCT_013_000
   EnergyMonitor emon1;
   double power = 0;
@@ -55,17 +65,28 @@ bool initialWifiConfig = false;
   double pressure = 0;
 #endif
 
+#ifdef DS18B20
+  OneWire oneWire(ONE_WIRE_BUS);
+  DallasTemperature sensors(&oneWire);
+  DeviceAddress tempDeviceAddress;
+  float ds18b20Temp = 0.0;
+#endif
+
 
 
 void initOTA(void)
 {
   ArduinoOTA.onStart([]() {
+#ifdef WS2812_LED
     ledController.setColour(WS2812_BRIGHTNESS,0,0);
+#endif
     Serial.println("OTA Update Started");
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\nOTA Update Complete");
+#ifdef WS2812_LED
     ledController.setColour(0,0,0);
+#endif
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
@@ -98,17 +119,30 @@ bool timerExpired(unsigned long startTime, unsigned long expiryTime)
 
 void publishReadings(void)
 {
+  StaticJsonDocument<1024> doc; // create a JSON document
+  char buffer[512]; // create a character buffer for the JSON serialised stream
+
+  // copy the temparure readings into the JSON object as strings
 #ifdef SENSOR_SCT_013_000
-  client.publish(MQTT_TOPIC_CURRENT, String(current).c_str());
-  client.publish(MQTT_TOPIC_POWER, String(power).c_str());
+  doc["current"] = current;
+  doc["power"] = power;
 #endif
 
 #ifdef SENSOR_BME280
-  client.publish(MQTT_TOPIC_TEMPERATURE, String(temperature).c_str());
-  client.publish(MQTT_TOPIC_HUMIDITY, String(humidity).c_str());
-  client.publish(MQTT_TOPIC_PRESSURE, String(pressure).c_str());
-  client.publish(MQTT_TOPIC_ALTITUDE, String(altitude).c_str());
+  doc["bmeTemperature"] = temperature;
+  doc["bmeHumidity"] = humidity;
+  doc["bmeAltitude"] = altitude;
+  doc["bmePressure"] = pressure;
 #endif
+
+#ifdef DS18B20
+  doc["dallasTemperature"] = ds18b20Temp;
+#endif
+
+  // now publish
+  size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
+  client.publish(MQTT_DATA, buffer, n);  // pulish the stream
+  serializeJsonPretty(doc, Serial);
 }
 
 void callback(char* topic, byte* payload, unsigned int length)
@@ -126,7 +160,7 @@ void callback(char* topic, byte* payload, unsigned int length)
   Serial.print("MQTT message received: ");
   Serial.println(input);
 
-  if (strcmp(topic, MQTT_COMMS)==0)
+  if (strcmp(topic, MQTT_CMD)==0)
   {    
     if(strcmp(input,"*IDN?")==0)
     {
@@ -136,7 +170,6 @@ void callback(char* topic, byte* payload, unsigned int length)
     if(strcmp(input,"*RST")==0)
     {
       // give info
-      ledController.setColour(WS2812_BRIGHTNESS,0,0);
       client.disconnect();
       WiFiManager wifiManager;
       wifiManager.resetSettings();
@@ -150,7 +183,7 @@ void readSensors(void)
 {
 #ifdef SENSOR_SCT_013_000
     current = emon1.calcIrms(SCT_013_000_SAMPLES);  // Calculate Irms only (arg is number of samples)
-    power = current*SCT_013_000_VOLTAGE;         // Apparent power
+    power = current * SCT_013_000_VOLTAGE;         // Apparent power
     if (power<0)    power = 0;
 #endif
 
@@ -159,6 +192,26 @@ void readSensors(void)
     humidity = bme.readHumidity();
     pressure = bme.readPressure();
     altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);  // approximate
+#endif
+
+#ifdef DS18B20
+  unsigned int retries = 10;
+  bool sensorsReady = false;
+
+  // a little blocking loop to wait for conversion to be complete
+  do
+  {
+    sensorsReady = sensors.isConversionComplete();
+    retries--;
+    if(!sensorsReady)
+    {
+      delay(1);
+      Serial.println("Waiting for conversion to complete");
+    }
+  } while (!sensorsReady && retries > 0);
+  
+  ds18b20Temp = sensors.getTempCByIndex(0);
+  sensors.requestTemperatures();
 #endif
 }
 
@@ -174,7 +227,21 @@ void initSensors(void)
     ledController.setColour(WS2812_BRIGHTNESS,0,0);
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
     while (1);
+    tempDeviceAddress = sensors.getAddress(address, 0);
+    sensors.setResolution(tempDeviceAddress, 12);
+    sensors.setWaitForConversion(false);
+    sensors.requestTemperatures();
   }
+#endif
+
+#ifdef DS18B20
+  sensors.begin();
+  int deviceCount = sensors.getDeviceCount();
+  Serial.print("Found: ");
+  Serial.print(deviceCount);
+  Serial.println(" DS18B20 sensors");
+  if(deviceCount < 1)
+    while(1);
 #endif
 }
 
@@ -211,18 +278,37 @@ void wifiProcess(void)
       if (client.connect(DEVICE_NAME, MQTT_USERNAME, MQTT_PASSWORD))
       {
         Serial.println("Connected");
-        client.publish(MQTT_ROOM, "Connected");
-        client.subscribe(MQTT_COMMS);
+        client.subscribe(MQTT_CMD);
+
+        StaticJsonDocument<1024> doc; // create a JSON document
+        doc["name"] = HOSTNAME;
+        doc["description"] = DEVICE_DESCRIPTION;
+        doc["version"] = VERSION_STRING;
+        doc["core"] = "ESP8266";
+        doc["ssid"] = String(WiFi.SSID().c_str());
+        doc["ip"] = WiFi.localIP().toString();
+        doc["rssi"] = WiFi.RSSI();
+        
+        char buffer[512]; // create a character buffer for the JSON serialised stream
+        size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
+        client.publish(MQTT_METADATA, buffer, n);  // publish the stream
+        Serial.print("Publishing to ");
+        Serial.println(MQTT_METADATA);
+        serializeJsonPretty(doc, Serial);
       }
       else
       {
         Serial.print("failed, rc=");
         Serial.print(client.state());
         Serial.print(" try again in 5 seconds");
+#ifdef WS2812_LED
         ledController.setColour(WS2812_BRIGHTNESS,0,0);
+#endif
         // Wait 5 seconds before retrying and flash LED red
         delay(3000);
+#ifdef WS2812_LED
         ledController.setColour(0,0,0);
+#endif
         delay(2000);
       }
     }
@@ -254,9 +340,11 @@ void setup()
   Serial.begin(SERIAL_BAUD_RATE);
   Serial.print("SensorNode ");
   Serial.println(VERSION_STRING);
-  
+
+#ifdef WS2812_LED
   FastLED.addLeds<NEOPIXEL, WS2812_DATA_PIN>(leds, WS2812_NUM_LEDS);
   ledController.setColour(0,0,0);
+#endif
 
   client.setServer(MQTT_SERVER, MQTT_PORT);
   client.setCallback(callback);
@@ -266,7 +354,10 @@ void setup()
   initWifi();
   
   setTimer(&publishTimer);
+
+#ifdef WS2812_LED
   ledController.setColourTarget(0,0,0);
+#endif
 }
 
 void loop()
@@ -275,14 +366,18 @@ void loop()
   wifiProcess();
   
   // update the LEDs 
+#ifdef WS2812_LED
   ledController.run();
-  
+#endif
+
   // if timer has expired, take some readings and publish
   if (timerExpired(publishTimer, MQTT_PUBLISH_INTERVAL))  // get the time every 5 seconds
   {
     setTimer(&publishTimer);  // reset timer
     readSensors();
     publishReadings();
+#ifdef WS2812_LED
     ledController.pulse(0,WS2812_BRIGHTNESS,0);
+#endif
   }
 }
