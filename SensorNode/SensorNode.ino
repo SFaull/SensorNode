@@ -25,6 +25,10 @@
   #include "EmonLib.h"
 #endif
 
+#ifdef AD7680
+  #include <SPI.h>
+#endif
+
 #ifdef SENSOR_BME280
   #include <Wire.h>
   #include <Adafruit_Sensor.h>
@@ -179,6 +183,85 @@ void callback(char* topic, byte* payload, unsigned int length)
   }  
 }
 
+
+/*  Data Format:
+ *  [0][0][0][0][B15][B14][B13][B12][B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][0][0][0][0] 
+ *  |________|   |_________________________________________________________________|  |________|
+ * 4 LEADING 0S                        16-bit SAMPLE DATA                             4 TRAILING 0S
+ */
+unsigned int AD7680_read()
+{
+  uint16_t data;
+  unsigned int reading;
+  
+  // enable chip
+  digitalWrite(AD7680_CS,LOW);
+  
+  // get the first byte, remove the leading zeros and shift.
+  data = SPI.transfer(255);   // B2
+  reading = (data &= 0x0F)  << 12;
+
+  // get the second byte and shift
+  data = SPI.transfer(255);   // B1
+  reading |= (data << 4);
+
+  // get the third byte, remove the trailing zeros and shift
+  data = SPI.transfer(255);   // B0
+  reading |= (data &= 0xF0) >> 4;
+
+  // disable chip
+  digitalWrite(AD7680_CS,HIGH);
+  
+  return reading;
+}
+
+void initSensors(void)
+{
+
+#ifdef SENSOR_SCT_013_000
+  emon1.current(SCT_013_000_PIN, SCT_013_000_CAL_FACTOR);             // Current: input pin, calibration (the mains current that gives you 1 V at the ADC input.)  
+#endif
+
+#ifdef AD7680
+  // setup pin modes
+  pinMode(AD7680_CS,OUTPUT);
+  pinMode(AD7680_MISO,INPUT);
+  pinMode(AD7680_SCLK,OUTPUT);
+
+  // disable device at startup
+  digitalWrite(AD7680_CS,HIGH);
+  digitalWrite(AD7680_SCLK,HIGH);  
+
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2); //divide the clock by 2 (40MHz?)
+  
+  emon1.setReadCallback(AD7680_read);
+#endif
+
+#ifdef SENSOR_BME280
+  bool status = bme.begin(BME280_I2C_ADDRESS);  
+  if (!status) {
+    ledController.setColour(WS2812_BRIGHTNESS,0,0);
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    while (1);
+    tempDeviceAddress = sensors.getAddress(address, 0);
+    sensors.setResolution(tempDeviceAddress, 12);
+    sensors.setWaitForConversion(false);
+    sensors.requestTemperatures();
+  }
+#endif
+
+#ifdef DS18B20
+  sensors.begin();
+  int deviceCount = sensors.getDeviceCount();
+  Serial.print("Found: ");
+  Serial.print(deviceCount);
+  Serial.println(" DS18B20 sensors");
+  if(deviceCount < 1)
+    while(1);
+#endif
+}
+
 void readSensors(void)
 {
 #ifdef SENSOR_SCT_013_000
@@ -212,36 +295,6 @@ void readSensors(void)
   
   ds18b20Temp = sensors.getTempCByIndex(0);
   sensors.requestTemperatures();
-#endif
-}
-
-void initSensors(void)
-{
-#ifdef SENSOR_SCT_013_000
-  emon1.current(SCT_013_000_PIN, SCT_013_000_CAL_FACTOR);             // Current: input pin, calibration (the mains current that gives you 1 V at the ADC input.)
-#endif
-
-#ifdef SENSOR_BME280
-  bool status = bme.begin(BME280_I2C_ADDRESS);  
-  if (!status) {
-    ledController.setColour(WS2812_BRIGHTNESS,0,0);
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1);
-    tempDeviceAddress = sensors.getAddress(address, 0);
-    sensors.setResolution(tempDeviceAddress, 12);
-    sensors.setWaitForConversion(false);
-    sensors.requestTemperatures();
-  }
-#endif
-
-#ifdef DS18B20
-  sensors.begin();
-  int deviceCount = sensors.getDeviceCount();
-  Serial.print("Found: ");
-  Serial.print(deviceCount);
-  Serial.println(" DS18B20 sensors");
-  if(deviceCount < 1)
-    while(1);
 #endif
 }
 
@@ -334,6 +387,7 @@ void initWifi(void)
     delay(5000);
   } 
 }
+
 
 void setup()
 {

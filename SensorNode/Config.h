@@ -14,7 +14,8 @@
 
 // Hardware Options (uncomment all of the sensors that are connected)
 //#define WS2812_LED                      // Neopixel LED
-//#define SENSOR_SCT_013_000              // Power & Current sensor
+#define SENSOR_SCT_013_000              // Power & Current sensor
+#define AD7680
 //#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
 #define DS18B20                           // Dalas onewire temperature sensor
 
@@ -33,6 +34,13 @@
   #define SCT_013_000_VOLTAGE     230.0
   #define SCT_013_000_CAL_FACTOR  20.40816
   #define emonTxV3                                // uncomment if ADC is 3V3 
+#endif
+
+// External ADC pin mapping
+#ifdef AD7680
+  #define AD7680_CS   10 // Pin D10 -> ADC Pin 8 (CS)
+  #define AD7680_MISO 12 // Pin D12 -> ADC Pin 7 (SDATA = MISO)
+  #define AD7680_SCLK 13 // Pin D13 -> ADC Pin 5 (SCLK)
 #endif
 
 // RHT options
