@@ -2,8 +2,8 @@
 // see https://community.openenergymonitor.org/t/calibration-and-parameters-in-emonlib/6855
 // also https://learn.openenergymonitor.org/electricity-monitoring/ctac/ct-and-ac-power-adaptor-installation-and-calibration-theory?redirected=true
 
-#include "Config.h"
-#include "CredentialsConfig.h"
+#include "Config.h" // when compiling, make sure the correct config is uncluded (there is one for each device)
+#include "CredentialsConfig.h"  // Ensure this file exists, it should be generated from CredentialsConig-template.h
 #include "version.h"
 
 #include <WiFiManager.h>
@@ -80,6 +80,8 @@ bool initialWifiConfig = false;
 
 void initOTA(void)
 {
+  ArduinoOTA.setHostname(HOSTNAME);
+  
   ArduinoOTA.onStart([]() {
 #ifdef WS2812_LED
     ledController.setColour(WS2812_BRIGHTNESS,0,0);
@@ -121,6 +123,12 @@ bool timerExpired(unsigned long startTime, unsigned long expiryTime)
   return false;
 }
 
+// rounds a number to x decimal places
+// example: round(3.14159, 2) -> 3.14
+double round(double value, unsigned int dp) {
+   return (int)(value * (10*dp) + 0.5) / (10.0 * (float)dp) ;
+}
+
 void publishReadings(void)
 {
   StaticJsonDocument<1024> doc; // create a JSON document
@@ -128,8 +136,8 @@ void publishReadings(void)
 
   // copy the temparure readings into the JSON object as strings
 #ifdef SENSOR_SCT_013_000
-  doc["current"] = current;
-  doc["power"] = power;
+  doc["current"] = round(current, 4);
+  doc["power"] = round(power, 4);
 #endif
 
 #ifdef SENSOR_BME280
@@ -147,6 +155,7 @@ void publishReadings(void)
   size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
   client.publish(MQTT_DATA, buffer, n);  // pulish the stream
   serializeJsonPretty(doc, Serial);
+  Serial.println();
 }
 
 void callback(char* topic, byte* payload, unsigned int length)
@@ -184,6 +193,7 @@ void callback(char* topic, byte* payload, unsigned int length)
 }
 
 
+#ifdef AD7680
 /*  Data Format:
  *  [0][0][0][0][B15][B14][B13][B12][B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][0][0][0][0] 
  *  |________|   |_________________________________________________________________|  |________|
@@ -211,9 +221,22 @@ unsigned int AD7680_read()
 
   // disable chip
   digitalWrite(AD7680_CS,HIGH);
+
   
   return reading;
 }
+
+/* returns the average of 4 sequential samples */
+unsigned int AD7680_read_avg()
+{
+  unsigned long sum = 0;
+  
+  for (int i = 0; i < 4; i++)
+    sum += AD7680_read();
+  
+  return (unsigned int)(sum >> 2);
+}
+#endif
 
 void initSensors(void)
 {
@@ -234,8 +257,14 @@ void initSensors(void)
 
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV2); //divide the clock by 2 (40MHz?)
-  
-  emon1.setReadCallback(AD7680_read);
+
+  emon1.setReadCallback(AD7680_read_avg);
+  emon1.setAdcResolution(16);
+
+  // throwaway the first few samples
+  for(int i = 0; i < 10; i++)
+    emon1.calcIrms(1000);
+    
 #endif
 
 #ifdef SENSOR_BME280
@@ -244,10 +273,6 @@ void initSensors(void)
     ledController.setColour(WS2812_BRIGHTNESS,0,0);
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
     while (1);
-    tempDeviceAddress = sensors.getAddress(address, 0);
-    sensors.setResolution(tempDeviceAddress, 12);
-    sensors.setWaitForConversion(false);
-    sensors.requestTemperatures();
   }
 #endif
 
@@ -259,6 +284,10 @@ void initSensors(void)
   Serial.println(" DS18B20 sensors");
   if(deviceCount < 1)
     while(1);
+  tempDeviceAddress = sensors.getAddress(address, 0);
+  sensors.setResolution(tempDeviceAddress, 12);
+  sensors.setWaitForConversion(false);
+  sensors.requestTemperatures();
 #endif
 }
 
@@ -323,9 +352,6 @@ void wifiProcess(void)
   // check mqtt connection (TODO should have some timout on this.)
   if (!client.connected())
   {
-    // Loop until we're reconnected
-    while (!client.connected())
-    {
       Serial.print("Attempting MQTT connection... ");
       // Attempt to connect
       if (client.connect(DEVICE_NAME, MQTT_USERNAME, MQTT_PASSWORD))
@@ -348,6 +374,7 @@ void wifiProcess(void)
         Serial.print("Publishing to ");
         Serial.println(MQTT_METADATA);
         serializeJsonPretty(doc, Serial);
+        Serial.println();
       }
       else
       {
@@ -364,7 +391,6 @@ void wifiProcess(void)
 #endif
         delay(2000);
       }
-    }
   }
 
   client.loop();
@@ -372,13 +398,43 @@ void wifiProcess(void)
   ArduinoOTA.handle();
 }
 
+void printReadings()
+{
+  #ifdef SENSOR_SCT_013_000
+  Serial.print("Current: ");
+  Serial.println(current);
+  Serial.print("Power: ");
+  Serial.println(power);
+#endif
+
+#ifdef SENSOR_BME280
+  Serial.print("Temperatute: ");
+  Serial.println(temperature);
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+  Serial.print("Pressure: ");
+  Serial.println(pressure);
+  Serial.print("Altitude: ");
+  Serial.println(altitude);
+#endif
+
+#ifdef DS18B20
+  Serial.print("Temperatute: ");
+  Serial.println(ds18b20Temp);
+#endif
+
+  Serial.println();
+
+}
+
 
 void initWifi(void)
 {
+  WiFi.hostname(HOSTNAME);
   WiFi.mode(WIFI_STA); // Force to station mode because if device was switched off while in access point mode it will start up next time
   WiFiManager wifiManager;
   wifiManager.setTimeout(WIFI_TIMEOUT);
-  bool connectionSuccess = wifiManager.autoConnect(DEVICE_NAME);  
+  bool connectionSuccess = wifiManager.autoConnect(HOSTNAME);  
   if (!connectionSuccess) 
   {
     Serial.println("Connection failed... restarting");
@@ -406,16 +462,18 @@ void setup()
   initOTA();
   initSensors();
   initWifi();
-  
+
+  readSensors();
   setTimer(&publishTimer);
 
 #ifdef WS2812_LED
   ledController.setColourTarget(0,0,0);
 #endif
+
 }
 
 void loop()
-{
+{  
   // keep wireless comms alive
   wifiProcess();
   

@@ -17,7 +17,7 @@
 #define SENSOR_SCT_013_000              // Power & Current sensor
 #define AD7680
 //#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
-#define DS18B20                           // Dalas onewire temperature sensor
+//#define DS18B20                           // Dalas onewire temperature sensor
 
 
 // LED
@@ -28,11 +28,11 @@
 #endif
 
 // Current sensor options
-#ifdef SENSOR_SCT_013_000
+#ifdef SENSOR_SCT_013_000  
   #define SCT_013_000_PIN         A0
-  #define SCT_013_000_SAMPLES     1480
+  #define SCT_013_000_SAMPLES     5000  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
   #define SCT_013_000_VOLTAGE     230.0
-  #define SCT_013_000_CAL_FACTOR  20.40816
+  #define SCT_013_000_CAL_FACTOR  102 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
   #define emonTxV3                                // uncomment if ADC is 3V3 
 #endif
 
@@ -51,7 +51,7 @@
 
 // Dallas temperature probe options (only 1 sensor supported)
 #ifdef DS18B20
-  #define ONE_WIRE_BUS 2 // D4
+  #define ONE_WIRE_BUS 2          // D4
 #endif
 
 
@@ -68,3 +68,6 @@
    * a constant = current constant × (3.3 ÷ 1024)
    * current constant = (100 ÷ 0.050) ÷ 98 = 20.40816
    */
+
+
+   // burden resistor for second build is 68Rx3 -> 22.66666 (measured is 23R exactly) https://learn.openenergymonitor.org/electricity-monitoring/ct-sensors/interface-with-arduino

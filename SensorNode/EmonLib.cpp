@@ -220,7 +220,6 @@ double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
     int SupplyVoltage = readVcc();
   #endif
 
-  unsigned long timerA = millis();
   for (unsigned int n = 0; n < Number_of_Samples; n++)
   {
     if(customCallback)
@@ -243,12 +242,7 @@ double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
     // 2) sum
     sumI += sqI;
   }
-#if 1
-  unsigned long timerB = millis() - timerA;
-  Serial.print("Took ");
-  Serial.print(timerB);
-  Serial.println("ms");
-#endif
+
   double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS(adcResolution)));
   Irms = I_RATIO * sqrt(sumI / Number_of_Samples);
 
