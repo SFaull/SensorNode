@@ -36,6 +36,7 @@
   #define SCT_013_000_SAMPLES     5000  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
   #define SCT_013_000_VOLTAGE     230.0
   #define SCT_013_000_CAL_FACTOR  102.0 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
+  #define SCT_013_000_ZERO_OFFSET 0.1
   #define emonTxV3                                // uncomment if ADC is 3V3 
 #endif
 

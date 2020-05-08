@@ -295,6 +295,8 @@ void readSensors(void)
 {
 #ifdef SENSOR_SCT_013_000
     current = emon1.calcIrms(SCT_013_000_SAMPLES);  // Calculate Irms only (arg is number of samples)
+    current -= SCT_013_000_ZERO_OFFSET;
+    if (current<0)    current = 0;
     power = current * SCT_013_000_VOLTAGE;         // Apparent power
     if (power<0)    power = 0;
 #endif
