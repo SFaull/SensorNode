@@ -141,14 +141,14 @@ void publishReadings(void)
 #endif
 
 #ifdef SENSOR_BME280
-  doc["bmeTemperature"] = temperature;
-  doc["bmeHumidity"] = humidity;
-  doc["bmeAltitude"] = altitude;
-  doc["bmePressure"] = pressure;
+  doc["bmeTemperature"] = round(temperature, 2);
+  doc["bmeHumidity"] = round(humidity, 2);
+  doc["bmeAltitude"] = round(altitude, 2);
+  doc["bmePressure"] = round(pressure, 2);
 #endif
 
 #ifdef DS18B20
-  doc["dallasTemperature"] = ds18b20Temp;
+  doc["dallasTemperature"] = round(ds18b20Temp, 2);
 #endif
 
   // now publish
