@@ -223,13 +223,9 @@ double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
   for (unsigned int n = 0; n < Number_of_Samples; n++)
   {
     if(customCallback)
-    {
       sampleI = (int32_t)(*readCallback)();
-    } 
     else
       sampleI = analogRead(inPinI); //Read in raw current signal
-    
-    sampleI = analogRead(inPinI);
 
     // Digital low pass filter extracts the 2.5 V or 1.65 V dc offset,
     //  then subtract this - signal is now centered on 0 counts.
