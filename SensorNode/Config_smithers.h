@@ -1,19 +1,19 @@
  // KANG - Environment monitor in the garage
 
 // General
-#define DEVICE_NAME             "Smithers"
+#define DEVICE_NAME             "smithers"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "Mains Power and Temperature Monitor"
 #define SERIAL_BAUD_RATE        115200
 #define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
 // MQTT
-#define MQTT_PUBLISH_INTERVAL   5000 // 5 seconds
-#define MQTT_ROOM               "Garage"
+#define MQTT_PUBLISH_INTERVAL   10000 // 10 seconds
+#define MQTT_ROOM               "garage"
 #define MQTT_ROOT               MQTT_ROOM "/" HOSTNAME
 #define MQTT_DATA               MQTT_ROOT "/data"
 #define MQTT_CMD                MQTT_ROOT "/cmd"
-#define MQTT_METADATA           MQTT_ROOT "/metadata"         
+#define MQTT_METADATA           MQTT_ROOT "/meta"         
 
 // Hardware Options (uncomment all of the sensors that are connected)
 //#define WS2812_LED                      // Neopixel LED

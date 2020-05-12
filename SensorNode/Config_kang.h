@@ -1,19 +1,19 @@
 // KANG - Environment monitor in the shed.
 
 // General
-#define DEVICE_NAME             "Kang"
+#define DEVICE_NAME             "kang"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "Environmental Monitoring of Temperature, Humidity and Pressure"
 #define SERIAL_BAUD_RATE        115200
 #define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
 // MQTT
-#define MQTT_PUBLISH_INTERVAL   5000 // 5 seconds
-#define MQTT_ROOM               "Shed"
+#define MQTT_PUBLISH_INTERVAL   10000 // 10 seconds
+#define MQTT_ROOM               "shed"
 #define MQTT_ROOT               MQTT_ROOM "/" HOSTNAME
 #define MQTT_DATA               MQTT_ROOT "/data"
 #define MQTT_CMD                MQTT_ROOT "/cmd"
-#define MQTT_METADATA           MQTT_ROOT "/metadata"     
+#define MQTT_METADATA           MQTT_ROOT "/meta"     
 
 // Hardware Options (uncomment all of the sensors that are connected)
 #define WS2812_LED                      // Neopixel LED
@@ -27,7 +27,7 @@
 #ifdef WS2812_LED
   #define WS2812_DATA_PIN         4 
   #define WS2812_NUM_LEDS         1
-  #define WS2812_BRIGHTNESS       15
+  #define WS2812_BRIGHTNESS       10
 #endif
 
 // Current sensor options
