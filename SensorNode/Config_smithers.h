@@ -1,4 +1,4 @@
-// KANG - Environment monitor in the garage
+ // KANG - Environment monitor in the garage
 
 // General
 #define DEVICE_NAME             "Smithers"
@@ -36,15 +36,15 @@
   #define SCT_013_000_SAMPLES     5000  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
   #define SCT_013_000_VOLTAGE     230.0
   #define SCT_013_000_CAL_FACTOR  102.0 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
-  #define SCT_013_000_ZERO_OFFSET 0.1
+  #define SCT_013_000_ZERO_OFFSET 0.0
   #define emonTxV3                                // uncomment if ADC is 3V3 
 #endif
 
 // External ADC pin mapping
 #ifdef AD7680
-  #define AD7680_CS   10 // Pin D10 -> ADC Pin 8 (CS)
+  #define AD7680_CS   15 // Pin D10 -> ADC Pin 8 (CS)
   #define AD7680_MISO 12 // Pin D12 -> ADC Pin 7 (SDATA = MISO)
-  #define AD7680_SCLK 13 // Pin D13 -> ADC Pin 5 (SCLK)
+  #define AD7680_SCLK 14 // Pin D13 -> ADC Pin 5 (SCLK)
 #endif
 
 // RHT options

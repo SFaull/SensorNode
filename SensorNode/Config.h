@@ -39,9 +39,9 @@
 
 // External ADC pin mapping
 #ifdef AD7680
-  #define AD7680_CS   10 // Pin D10 -> ADC Pin 8 (CS)
+  #define AD7680_CS   15 // Pin D10 -> ADC Pin 8 (CS)
   #define AD7680_MISO 12 // Pin D12 -> ADC Pin 7 (SDATA = MISO)
-  #define AD7680_SCLK 13 // Pin D13 -> ADC Pin 5 (SCLK)
+  #define AD7680_SCLK 14 // Pin D13 -> ADC Pin 5 (SCLK)
 #endif
 
 // RHT options
