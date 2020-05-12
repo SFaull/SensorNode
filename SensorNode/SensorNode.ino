@@ -76,6 +76,28 @@ bool initialWifiConfig = false;
   float ds18b20Temp = 0.0;
 #endif
 
+// get an ip from a hostname on the connected network
+IPAddress findMDNS(String mDnsHost) { 
+  // the input mDnsHost is e.g. "mqtt-broker" from "mqtt-broker.local"
+  Serial.println("Finding the mDNS details...");
+  // Need to make sure that we're connected to the wifi first
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(250);
+    Serial.print(".");
+  }
+  Serial.println("\nStarting connection to server...");
+  IPAddress result;
+  int err = WiFi.hostByName(MQTT_SERVER, result) ;
+  if(err == 1){
+        Serial.print("Ip address: ");
+        Serial.println(result);
+  } else {
+        Serial.print("Error code: ");
+        Serial.println(err);
+  }
+
+  return result;
+}
 
 
 void initOTA(void)
@@ -460,12 +482,14 @@ void setup()
   ledController.setColour(0,0,0);
 #endif
 
-  client.setServer(MQTT_SERVER, MQTT_PORT);
-  client.setCallback(callback);
-
   initOTA();
   initSensors();
   initWifi();
+
+  /* init MQTT */
+  IPAddress ip = findMDNS(MQTT_SERVER);
+  client.setServer(ip, MQTT_PORT);
+  client.setCallback(callback);
 
   readSensors();
   setTimer(&publishTimer);
