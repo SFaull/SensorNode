@@ -11,6 +11,7 @@
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
 #include <WifiUDP.h>
+#include <mDNSResolver.h>
 #include <ArduinoJson.h>
 #include <String.h>
 #include <stdio.h>
@@ -40,9 +41,12 @@
   #include <DallasTemperature.h>
 #endif
 
+using namespace mDNSResolver;
 
 // General variable declarations
 WiFiClient espClient;
+WiFiUDP udp;
+Resolver resolver(udp);
 PubSubClient client(espClient);
 unsigned long publishTimer = 0;
 bool initialWifiConfig = false;
@@ -85,18 +89,24 @@ IPAddress findMDNS(String mDnsHost) {
     delay(250);
     Serial.print(".");
   }
-  Serial.println("\nStarting connection to server...");
-  IPAddress result;
-  int err = WiFi.hostByName(MQTT_SERVER, result) ;
-  if(err == 1){
-        Serial.print("Ip address: ");
-        Serial.println(result);
-  } else {
-        Serial.print("Error code: ");
-        Serial.println(err);
-  }
 
-  return result;
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.print("Resolving ");
+  Serial.println(MQTT_SERVER);
+
+  resolver.setLocalIP(WiFi.localIP());
+  
+  IPAddress ip = resolver.search(MQTT_SERVER);
+  if(ip != INADDR_NONE) {
+    Serial.print("Resolved: ");
+    Serial.println(ip);
+  } else {
+    Serial.println("Not resolved");
+  }
+  
+  return ip;
 }
 
 
