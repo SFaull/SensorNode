@@ -163,15 +163,17 @@ void publishReadings(void)
 #endif
 
 #ifdef SENSOR_BME280
-  doc["bmeTemperature"] = roundMe(temperature, 2);
-  doc["bmeHumidity"] = roundMe(humidity, 2);
-  doc["bmeAltitude"] = roundMe(altitude, 2);
-  doc["bmePressure"] = roundMe(pressure, 2);
+  doc["bme_temperature"] = roundMe(temperature, 2);
+  doc["bme_humidity"] = roundMe(humidity, 2);
+  doc["bme_altitude"] = roundMe(altitude, 2);
+  doc["bme_pressure"] = roundMe(pressure, 2);
 #endif
 
 #ifdef DS18B20
-  doc["dallasTemperature"] = roundMe(ds18b20Temp, 2);
+  doc["dallas_temperature"] = roundMe(ds18b20Temp, 2);
 #endif
+
+  doc["wifi_rssi"] = WiFi.RSSI();
 
   // now publish
   size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
@@ -392,7 +394,6 @@ void wifiProcess(void)
         doc["core"] = "ESP8266";
         doc["ssid"] = String(WiFi.SSID().c_str());
         doc["ip"] = WiFi.localIP().toString();
-        doc["rssi"] = WiFi.RSSI();
         
         char buffer[512]; // create a character buffer for the JSON serialised stream
         size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
