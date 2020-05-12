@@ -125,7 +125,7 @@ bool timerExpired(unsigned long startTime, unsigned long expiryTime)
 
 // rounds a number to x decimal places
 // example: round(3.14159, 2) -> 3.14
-double round(double value, unsigned int dp) {
+double roundMe(double value, unsigned int dp) {
    return (int)(value * (10*dp) + 0.5) / (10.0 * (float)dp) ;
 }
 
@@ -136,19 +136,19 @@ void publishReadings(void)
 
   // copy the temparure readings into the JSON object as strings
 #ifdef SENSOR_SCT_013_000
-  doc["current"] = round(current, 4);
-  doc["power"] = round(power, 4);
+  doc["current"] = roundMe(current, 4);
+  doc["power"] = roundMe(power, 4);
 #endif
 
 #ifdef SENSOR_BME280
-  doc["bmeTemperature"] = round(temperature, 2);
-  doc["bmeHumidity"] = round(humidity, 2);
-  doc["bmeAltitude"] = round(altitude, 2);
-  doc["bmePressure"] = round(pressure, 2);
+  doc["bmeTemperature"] = roundMe(temperature, 2);
+  doc["bmeHumidity"] = roundMe(humidity, 2);
+  doc["bmeAltitude"] = roundMe(altitude, 2);
+  doc["bmePressure"] = roundMe(pressure, 2);
 #endif
 
 #ifdef DS18B20
-  doc["dallasTemperature"] = round(ds18b20Temp, 2);
+  doc["dallasTemperature"] = roundMe(ds18b20Temp, 2);
 #endif
 
   // now publish
@@ -259,13 +259,15 @@ void initSensors(void)
   SPI.setClockDivider(SPI_CLOCK_DIV2); //divide the clock by 2 (40MHz?)
 
   emon1.setReadCallback(AD7680_read_avg);
-  emon1.setAdcResolution(16);
+  emon1.setAdcResolution(16);    
+#endif
 
+
+#ifdef SENSOR_SCT_013_000
   // throwaway the first few samples
   for(int i = 0; i < 10; i++)
     emon1.calcIrms(1000);
-    
-#endif
+#endif 
 
 #ifdef SENSOR_BME280
   bool status = bme.begin(BME280_I2C_ADDRESS);  
@@ -284,7 +286,7 @@ void initSensors(void)
   Serial.println(" DS18B20 sensors");
   if(deviceCount < 1)
     while(1);
-  tempDeviceAddress = sensors.getAddress(address, 0);
+  sensors.getAddress(tempDeviceAddress, 0);
   sensors.setResolution(tempDeviceAddress, 12);
   sensors.setWaitForConversion(false);
   sensors.requestTemperatures();
@@ -494,4 +496,5 @@ void loop()
     ledController.pulse(0,WS2812_BRIGHTNESS,0);
 #endif
   }
+  
 }
