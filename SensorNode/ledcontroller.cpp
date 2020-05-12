@@ -103,8 +103,9 @@ void LEDController::applyColour(uint8_t r, uint8_t g, uint8_t b)
     {
       leds[i] = CRGB(r,g,b); 
     }
-#if 0
+
     FastLED.show();
+#if 0
     Serial.print("Whole strip set to ");
     Serial.print(r);
     Serial.print(",");
