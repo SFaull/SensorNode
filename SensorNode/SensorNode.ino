@@ -338,7 +338,11 @@ void readSensors(void)
 #endif
 
 #ifdef SENSOR_BME280
-    temperature = bme.readTemperature();
+    do
+    {
+      temperature = bme.readTemperature();
+    } while (temperature < -40 || temperature > 85);  // this is known to return a huge value occasionally, lets keep querying until we get an in-range temperature
+    
     humidity = bme.readHumidity();
     pressure = bme.readPressure();
     altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);  // approximate
