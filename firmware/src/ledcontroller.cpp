@@ -56,17 +56,22 @@ void LEDController::setColourTransition(void)
 {
   for(int addr=0; addr<STEPS; addr++)  // for each element in the array
   {
+
     for (int i=0; i<3; i++)  // for each colour in turn
     {
-      transition[addr][i] = map(addr, 0, STEPS-1, current_colour[i], target_colour[i]); // compute the proportional colour value
+      if(addr == (STEPS - 1))
+            transition[addr][i] = target_colour[i]; // ensure the last step is the exact target
+      else
+        transition[addr][i] = map(addr, 0, STEPS-1, current_colour[i], target_colour[i]); // compute the proportional colour value
     }
-    /*
+
+    #if 0
     Serial.print(transition[addr][0]);
     Serial.print(",");
     Serial.print(transition[addr][1]);
     Serial.print(",");
     Serial.println(transition[addr][2]);
-    */
+    #endif
   }
 }
 
