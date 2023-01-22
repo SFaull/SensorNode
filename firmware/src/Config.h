@@ -22,7 +22,7 @@
 
 // LED
 #ifdef WS2812_LED
-  #define WS2812_DATA_PIN         4 
+  #define WS2812_DATA_PIN         2 // D4 on Wemos 
   #define WS2812_NUM_LEDS         1
   #define WS2812_BRIGHTNESS       255
 #endif
