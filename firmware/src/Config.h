@@ -13,11 +13,11 @@
 #define MQTT_METADATA           MQTT_ROOM "/" HOSTNAME "/meta"     
 
 // Hardware Options (uncomment all of the sensors that are connected)
-//#define WS2812_LED                      // Neopixel LED
+#define WS2812_LED                      // Neopixel LED
 #define SENSOR_SCT_013_000              // Power & Current sensor
 #define AD7680
-//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
-//#define DS18B20                           // Dalas onewire temperature sensor
+#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+#define DS18B20                           // Dalas onewire temperature sensor
 
 
 // LED
