@@ -104,6 +104,11 @@ IPAddress findMDNS(String mDnsHost) {
     Serial.println(ip);
   } else {
     Serial.println("Not resolved");
+    Serial.println("Assuming IP has been provided, rather than hostname");
+    bool success = ip.fromString(MQTT_SERVER);
+    if(!success)
+      Serial.println("Failed to determine MQTT host");
+
   }
   
   return ip;
