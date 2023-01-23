@@ -1,9 +1,9 @@
-// KANG - Environment monitor in the shed.
+// KANG - Power monitor in the shed.
 
 // General
-#define DEVICE_NAME             "kang"
+#define DEVICE_NAME             "kodos"
 #define HOSTNAME                DEVICE_NAME
-#define DEVICE_DESCRIPTION      "Environmental Monitoring of Temperature, Humidity and Pressure"
+#define DEVICE_DESCRIPTION      "Mains Power Monitor"
 #define SERIAL_BAUD_RATE        115200
 #define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
@@ -13,19 +13,19 @@
 #define MQTT_ROOT               MQTT_ROOM "/" HOSTNAME
 #define MQTT_DATA               MQTT_ROOT "/data"
 #define MQTT_CMD                MQTT_ROOT "/cmd"
-#define MQTT_METADATA           MQTT_ROOT "/meta"     
+#define MQTT_METADATA           MQTT_ROOT "/meta"          
 
 // Hardware Options (uncomment all of the sensors that are connected)
-#define WS2812_LED                      // Neopixel LED
-//#define SENSOR_SCT_013_000            // Power & Current sensor
+//#define WS2812_LED                      // Neopixel LED
+#define SENSOR_SCT_013_000              // Power & Current sensor
 //#define AD7680
-#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
-//#define DS18B20                       // Dalas onewire temperature sensor
+//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+//#define DS18B20                           // Dalas onewire temperature sensor
 
 
 // LED
 #ifdef WS2812_LED
-  #define WS2812_DATA_PIN         4 
+  #define WS2812_DATA_PIN         2 // D4 on Wemos 
   #define WS2812_NUM_LEDS         1
   #define WS2812_BRIGHTNESS       10
 #endif
@@ -33,9 +33,9 @@
 // Current sensor options
 #ifdef SENSOR_SCT_013_000  
   #define SCT_013_000_PIN         A0
-  #define SCT_013_000_SAMPLES     5000  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
+  #define SCT_013_000_SAMPLES     1480  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
   #define SCT_013_000_VOLTAGE     230.0
-  #define SCT_013_000_CAL_FACTOR  102 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
+  #define SCT_013_000_CAL_FACTOR  20.40816 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
   #define SCT_013_000_ZERO_OFFSET 0
   #define emonTxV3                                // uncomment if ADC is 3V3 
 #endif
