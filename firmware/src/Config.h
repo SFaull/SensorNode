@@ -1,31 +1,28 @@
- // KANG - Environment monitor in the garage
-
 // General
-#define DEVICE_NAME             "smithers"
+#define DEVICE_NAME             "IOT_TEST"
 #define HOSTNAME                DEVICE_NAME
-#define DEVICE_DESCRIPTION      "Mains Power and Temperature Monitor"
+#define DEVICE_DESCRIPTION      "IOT Test Sensor (development)"
 #define SERIAL_BAUD_RATE        115200
 #define WIFI_TIMEOUT            300           // device will reset if no connection via portal within this number of seconds
 
 // MQTT
-#define MQTT_PUBLISH_INTERVAL   10000 // 10 seconds
-#define MQTT_ROOM               "garage"
-#define MQTT_ROOT               MQTT_ROOM "/" HOSTNAME
-#define MQTT_DATA               MQTT_ROOT "/data"
-#define MQTT_CMD                MQTT_ROOT "/cmd"
-#define MQTT_METADATA           MQTT_ROOT "/meta"         
+#define MQTT_PUBLISH_INTERVAL   5000 // 5 seconds
+#define MQTT_ROOM               "room"
+#define MQTT_DATA               MQTT_ROOM "/" HOSTNAME "/data"
+#define MQTT_CMD                MQTT_ROOM "/" HOSTNAME "/cmd"
+#define MQTT_METADATA           MQTT_ROOM "/" HOSTNAME "/meta"     
 
 // Hardware Options (uncomment all of the sensors that are connected)
-//#define WS2812_LED                      // Neopixel LED
+#define WS2812_LED                      // Neopixel LED
 #define SENSOR_SCT_013_000              // Power & Current sensor
 #define AD7680
-//#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
+#define SENSOR_BME280                   // Relative Humidity & Temperature sensor
 #define DS18B20                           // Dalas onewire temperature sensor
 
 
 // LED
 #ifdef WS2812_LED
-  #define WS2812_DATA_PIN         4 
+  #define WS2812_DATA_PIN         2 // D4 on Wemos 
   #define WS2812_NUM_LEDS         1
   #define WS2812_BRIGHTNESS       255
 #endif
@@ -35,8 +32,8 @@
   #define SCT_013_000_PIN         A0
   #define SCT_013_000_SAMPLES     5000  // note: when using AD7680, for each sample 4 are actually captured and averaged. Testing shows 10k samples can be retrieved in 120ms.
   #define SCT_013_000_VOLTAGE     230.0
-  #define SCT_013_000_CAL_FACTOR  102.0 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
-  #define SCT_013_000_ZERO_OFFSET 0.0
+  #define SCT_013_000_CAL_FACTOR  102 //  SHED: 20.40816  GARAGE:86.9565 (calculated) 102 actually works better
+  #define SCT_013_000_ZERO_OFFSET 0
   #define emonTxV3                                // uncomment if ADC is 3V3 
 #endif
 
