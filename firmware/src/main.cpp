@@ -166,6 +166,56 @@ double roundMe(double value, unsigned int dp) {
    return (int)(value * (10*dp) + 0.5) / (10.0 * (float)dp) ;
 }
 
+void sendMqttDiscovery(String sensorName, String sensorType, String sensorUnit) {
+  // This is the discovery topic for this specific sensor
+  String discoveryTopic = String(MQTT_DISCOVERY) + "/" + sensorName + "/config";
+
+  DynamicJsonDocument doc(1024);
+  char buffer[256];
+
+  doc["name"] = sensorName;
+  doc["stat_t"]   = MQTT_DATA;
+  doc["unit_of_meas"] = sensorUnit;
+  doc["dev_cla"] = sensorType;
+  doc["frc_upd"] = true;
+  // I'm sending a JSON object as the state of this MQTT device
+  // so we'll need to unpack this JSON object to get a single value
+  // for this specific sensor.
+  doc["val_tpl"] = "{{ value_json." + sensorName + "|default(0) }}";
+
+  size_t n = serializeJson(doc, buffer);
+
+  // debug
+  Serial.println("-- Discovery --");
+  Serial.print("Topic: ");
+  Serial.println(discoveryTopic.c_str());
+  Serial.print("JSON: ");
+  Serial.println(buffer);
+
+  client.publish(discoveryTopic.c_str(), buffer, n);
+}
+
+void sendMqttDiscoveryAllSensor()
+{
+#ifdef SENSOR_SCT_013_000
+  sendMqttDiscovery(JSON_PROP_CURRENT, "current", "A");
+  sendMqttDiscovery(JSON_PROP_POWER, "power", "W");
+#endif
+
+#ifdef SENSOR_BME280
+  sendMqttDiscovery(JSON_PROP_BME_TEMP, "temperature", "°C");
+  sendMqttDiscovery(JSON_PROP_BME_HUM, "humidity", "%");
+  sendMqttDiscovery(JSON_PROP_BME_ALT, "altitude", "m");
+  sendMqttDiscovery(JSON_PROP_BME_PRES, "pressure", "mBar");
+#endif
+
+#ifdef DS18B20
+  sendMqttDiscovery(JSON_PROP_DALLAS_TEMP, "temperature", "°C");
+#endif
+
+  sendMqttDiscovery(JSON_PROP_WIFI_RSSI, "wifi_strength", "dBm");
+}
+
 void publishReadings(void)
 {
   StaticJsonDocument<1024> doc; // create a JSON document
@@ -173,22 +223,22 @@ void publishReadings(void)
 
   // copy the temparure readings into the JSON object as strings
 #ifdef SENSOR_SCT_013_000
-  doc["current"] = roundMe(current, 4);
-  doc["power"] = roundMe(power, 4);
+  doc[JSON_PROP_CURRENT] = roundMe(current, 4);
+  doc[JSON_PROP_POWER] = roundMe(power, 4);
 #endif
 
 #ifdef SENSOR_BME280
-  doc["bme_temperature"] = roundMe(temperature, 2);
-  doc["bme_humidity"] = roundMe(humidity, 2);
-  doc["bme_altitude"] = roundMe(altitude, 2);
-  doc["bme_pressure"] = roundMe(pressure, 2);
+  doc[JSON_PROP_BME_TEMP] = roundMe(temperature, 2);
+  doc[JSON_PROP_BME_HUM] = roundMe(humidity, 2);
+  doc[JSON_PROP_BME_ALT] = roundMe(altitude, 2);
+  doc[JSON_PROP_BME_PRES] = roundMe(pressure, 2);
 #endif
 
 #ifdef DS18B20
-  doc["dallas_temperature"] = roundMe(ds18b20Temp, 2);
+  doc[JSON_PROP_DALLAS_TEMP] = roundMe(ds18b20Temp, 2);
 #endif
 
-  doc["wifi_rssi"] = WiFi.RSSI();
+  doc[JSON_PROP_WIFI_RSSI] = WiFi.RSSI();
 
   // now publish
   size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
@@ -518,6 +568,7 @@ void setup()
   ledController.setColourTarget(0,0,0);
 #endif
 
+  sendMqttDiscoveryAllSensor();
 }
 
 void loop()
