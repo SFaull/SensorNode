@@ -50,7 +50,7 @@ Resolver resolver(udp);
 PubSubClient client(espClient);
 unsigned long publishTimer = 0;
 bool initialWifiConfig = false;
-
+uint8_t msg_counter = 12;
 
 // Module specific variable declarations
 #ifdef WS2812_LED
@@ -583,8 +583,6 @@ void setup()
 
 void loop()
 {  
-  uint8_t msg_counter = 12;
-
   // keep wireless comms alive
   wifiProcess();
   
