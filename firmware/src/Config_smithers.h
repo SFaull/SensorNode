@@ -14,6 +14,17 @@
 #define MQTT_DATA               MQTT_ROOT "/data"
 #define MQTT_CMD                MQTT_ROOT "/cmd"
 #define MQTT_METADATA           MQTT_ROOT "/meta"         
+#define MQTT_DISCOVERY          "homeassistant/sensor/" HOSTNAME
+
+// JSON
+#define JSON_PROP_CURRENT     "current"
+#define JSON_PROP_POWER       "power"
+#define JSON_PROP_BME_TEMP    "bme_temperature"
+#define JSON_PROP_BME_HUM     "bme_humidity"
+#define JSON_PROP_BME_ALT     "bme_altitude"
+#define JSON_PROP_BME_PRES    "bme_pressure"
+#define JSON_PROP_DALLAS_TEMP "dallas_temperature"
+#define JSON_PROP_WIFI_RSSI   "wifi_rssi"
 
 // Hardware Options (uncomment all of the sensors that are connected)
 //#define WS2812_LED                      // Neopixel LED
