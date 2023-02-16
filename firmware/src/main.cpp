@@ -166,54 +166,65 @@ double roundMe(double value, unsigned int dp) {
    return (int)(value * (10*dp) + 0.5) / (10.0 * (float)dp) ;
 }
 
-void sendMqttDiscovery(String sensorName, String sensorType, String sensorUnit) {
+void sendMqttDiscovery(String sensorName, String sensorFriendlyName, String sensorClass, String sensorUnit) {
   // This is the discovery topic for this specific sensor
   String discoveryTopic = String(MQTT_DISCOVERY) + "/" + sensorName + "/config";
 
-  DynamicJsonDocument doc(1024);
-  char buffer[256];
+  StaticJsonDocument<2048> doc; // create a JSON document
+  char buffer[512];
 
-  doc["name"] = sensorName;
-  doc["stat_t"]   = MQTT_DATA;
-  doc["unit_of_meas"] = sensorUnit;
-  doc["dev_cla"] = sensorType;
-  doc["frc_upd"] = true;
+  doc["name"] = sensorFriendlyName;
+  doc["unique_id"] = String(HOSTNAME) + "_" + sensorName;
+  doc["state_topic"] = MQTT_DATA;
+  doc["state_class"] = "measurement";
+  doc["unit_of_measurement"] = sensorUnit;
+  doc["device_class"] = sensorClass;
+  doc["force_update"] = true;
   // I'm sending a JSON object as the state of this MQTT device
   // so we'll need to unpack this JSON object to get a single value
   // for this specific sensor.
-  doc["val_tpl"] = "{{ value_json." + sensorName + "|default(0) }}";
+  doc["value_template"] = "{{ value_json." + sensorName + " }}";
+  doc["device"]["identifiers"] = String(HOSTNAME); 
+  doc["device"]["name"] = "SensorNode_" + String(HOSTNAME); 
+  doc["device"]["manufacturer"] = "SamFaull";
+  doc["device"]["sw_version"] = VERSION_STRING; 
+  doc["device"]["model"] = "SensorNode"; 
 
   size_t n = serializeJson(doc, buffer);
 
+  bool result = client.publish(discoveryTopic.c_str(), buffer, n);
+
   // debug
   Serial.println("-- Discovery --");
+  Serial.print("Bytes: ");
+  Serial.println(n);
   Serial.print("Topic: ");
   Serial.println(discoveryTopic.c_str());
   Serial.print("JSON: ");
-  Serial.println(buffer);
-
-  client.publish(discoveryTopic.c_str(), buffer, n);
+  serializeJsonPretty(doc, Serial);
+  Serial.println();
+  Serial.println(result ? "Send: Success" : "Send: Failed");
 }
 
 void sendMqttDiscoveryAllSensor()
 {
 #ifdef SENSOR_SCT_013_000
-  sendMqttDiscovery(JSON_PROP_CURRENT, "current", "A");
-  sendMqttDiscovery(JSON_PROP_POWER, "power", "W");
+  sendMqttDiscovery(JSON_PROP_CURRENT, "Current", "current", "A");
+  sendMqttDiscovery(JSON_PROP_POWER, "Power", "power", "W");
 #endif
 
 #ifdef SENSOR_BME280
-  sendMqttDiscovery(JSON_PROP_BME_TEMP, "temperature", "°C");
-  sendMqttDiscovery(JSON_PROP_BME_HUM, "humidity", "%");
-  sendMqttDiscovery(JSON_PROP_BME_ALT, "altitude", "m");
-  sendMqttDiscovery(JSON_PROP_BME_PRES, "pressure", "mBar");
+  sendMqttDiscovery(JSON_PROP_BME_TEMP, "Temperature", "temperature", "°C");
+  sendMqttDiscovery(JSON_PROP_BME_HUM, "Humidity", "humidity", "%");
+  sendMqttDiscovery(JSON_PROP_BME_ALT, "Altitude", "distance", "m");
+  sendMqttDiscovery(JSON_PROP_BME_PRES, "Atmospheric Pressure", "atmospheric_pressure", "mBar");
 #endif
 
 #ifdef DS18B20
-  sendMqttDiscovery(JSON_PROP_DALLAS_TEMP, "temperature", "°C");
+  sendMqttDiscovery(JSON_PROP_DALLAS_TEMP, "Probe Temperature", "temperature", "°C");
 #endif
 
-  sendMqttDiscovery(JSON_PROP_WIFI_RSSI, "wifi_strength", "dBm");
+  sendMqttDiscovery(JSON_PROP_WIFI_RSSI, "WiFi RSSI", "signal_strength", "dBm");
 }
 
 void publishReadings(void)
@@ -243,6 +254,9 @@ void publishReadings(void)
   // now publish
   size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
   client.publish(MQTT_DATA, buffer, n);  // pulish the stream
+
+  Serial.print("Publishing to ");
+  Serial.println(MQTT_DATA);
   serializeJsonPretty(doc, Serial);
   Serial.println();
 }
@@ -455,6 +469,7 @@ void wifiProcess(void)
       {
         Serial.println("Connected");
         client.subscribe(MQTT_CMD);
+        client.setBufferSize(512);
 
         StaticJsonDocument<1024> doc; // create a JSON document
         doc["name"] = HOSTNAME;
@@ -567,12 +582,12 @@ void setup()
 #ifdef WS2812_LED
   ledController.setColourTarget(0,0,0);
 #endif
-
-  sendMqttDiscoveryAllSensor();
 }
 
 void loop()
 {  
+  uint8_t msg_counter = 12;
+
   // keep wireless comms alive
   wifiProcess();
   
@@ -590,6 +605,14 @@ void loop()
 #ifdef WS2812_LED
     ledController.pulse(0,WS2812_BRIGHTNESS,0);
 #endif
+
+    // discovery message (less frequent)
+    msg_counter++;
+    if(msg_counter >= 12)
+    {
+      sendMqttDiscoveryAllSensor();
+      msg_counter = 0;
+    }
   }
   
 }
