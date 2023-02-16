@@ -2,6 +2,7 @@
 
 // General
 #define DEVICE_NAME             "kang"
+#define DEVICE_MODEL            "SensorNode"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "Environmental Monitoring of Temperature, Humidity and Pressure"
 #define SERIAL_BAUD_RATE        115200

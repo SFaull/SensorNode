@@ -180,24 +180,20 @@ void sendMqttDiscovery(String sensorName, String sensorFriendlyName, String sens
   doc["unit_of_measurement"] = sensorUnit;
   doc["device_class"] = sensorClass;
   doc["force_update"] = true;
-  // I'm sending a JSON object as the state of this MQTT device
-  // so we'll need to unpack this JSON object to get a single value
-  // for this specific sensor.
   doc["value_template"] = "{{ value_json." + sensorName + " }}";
-  doc["device"]["identifiers"] = String(HOSTNAME); 
-  doc["device"]["name"] = "SensorNode_" + String(HOSTNAME); 
+  doc["device"]["identifiers"] = HOSTNAME; 
+  doc["device"]["name"] = String(DEVICE_MODEL) + "_" + String(HOSTNAME); 
   doc["device"]["manufacturer"] = "SamFaull";
   doc["device"]["sw_version"] = VERSION_STRING; 
-  doc["device"]["model"] = "SensorNode"; 
+  doc["device"]["model"] = DEVICE_MODEL; 
 
   size_t n = serializeJson(doc, buffer);
 
   bool result = client.publish(discoveryTopic.c_str(), buffer, n);
 
   // debug
-  Serial.println("-- Discovery --");
-  Serial.print("Bytes: ");
-  Serial.println(n);
+  //Serial.print("Bytes: ");
+  //Serial.println(n);
   Serial.print("Topic: ");
   Serial.println(discoveryTopic.c_str());
   Serial.print("JSON: ");
@@ -255,8 +251,9 @@ void publishReadings(void)
   size_t n = serializeJson(doc, buffer);  // serialise the JSON doc
   client.publish(MQTT_DATA, buffer, n);  // pulish the stream
 
-  Serial.print("Publishing to ");
+  Serial.print("Topic: ");
   Serial.println(MQTT_DATA);
+  Serial.print("JSON: ");
   serializeJsonPretty(doc, Serial);
   Serial.println();
 }

@@ -1,5 +1,6 @@
 // General
 #define DEVICE_NAME             "IOT_TEST"
+#define DEVICE_MODEL            "SensorNode"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "IOT Test Sensor (development)"
 #define SERIAL_BAUD_RATE        115200

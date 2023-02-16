@@ -2,6 +2,7 @@
 
 // General
 #define DEVICE_NAME             "kodos"
+#define DEVICE_MODEL            "SensorNode"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "Mains Power Monitor"
 #define SERIAL_BAUD_RATE        115200

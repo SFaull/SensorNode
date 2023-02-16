@@ -2,6 +2,7 @@
 
 // General
 #define DEVICE_NAME             "smithers"
+#define DEVICE_MODEL            "SensorNode"
 #define HOSTNAME                DEVICE_NAME
 #define DEVICE_DESCRIPTION      "Mains Power and Temperature Monitor"
 #define SERIAL_BAUD_RATE        115200
